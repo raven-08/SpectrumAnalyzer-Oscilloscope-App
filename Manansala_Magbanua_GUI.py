@@ -1,10 +1,12 @@
 import customtkinter as ctk
+import os
 from themes.theme import Theme
 from CTkMessagebox import CTkMessagebox as mb
 from PIL import Image, ImageSequence
 from Magbanua_Manansala_APP import VoiceRecorder
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from customtkinter import filedialog
 
 
 class VoiceRecorderGUI(ctk.CTkFrame):
@@ -41,6 +43,11 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             fg_color="transparent",
         )
         self.hero_frame.place(x=360, y=70)
+        self.plot_frame = ctk.CTkFrame(
+            self.hero_frame,
+            fg_color="transparent",
+        )
+        self.plot_frame.place(x=278, y=75)
         self.theme_frame = ctk.CTkFrame(
             self.frame,
             corner_radius=8,
@@ -87,6 +94,11 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             dark_image=Image.open("icons/save_dark.png"),
             size=(20, 20),
         )
+        self.download_icon = ctk.CTkImage(
+            light_image=Image.open("icons/download.png"),
+            dark_image=Image.open("icons/download_dark.png"),
+            size=(20, 20),
+        )
         self.play_icon = ctk.CTkImage(
             light_image=Image.open("icons/play.png"),
             dark_image=Image.open("icons/play_dark.png"),
@@ -95,6 +107,11 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         self.plot_icon = ctk.CTkImage(
             light_image=Image.open("icons/plot.png"),
             dark_image=Image.open("icons/plot_dark.png"),
+            size=(20, 20),
+        )
+        self.upload_icon = ctk.CTkImage(
+            light_image=Image.open("icons/upload.png"),
+            dark_image=Image.open("icons/upload_dark.png"),
             size=(20, 20),
         )
         self.logo_image = ctk.CTkImage(
@@ -223,11 +240,47 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             text_color_disabled=["white", "black"],
             font=(self.poppins, 14, "bold"),
             height=40,
-            width=140,
+            width=145,
             corner_radius=4,
-            state="normal",
+            state="disabled",
             command=self.showPlot,
         )
+        self.upload_button = ctk.CTkButton(
+            self.frame,
+            image=self.upload_icon,
+            text="Upload",
+            compound="left",
+            fg_color="#FF6505",
+            hover_color="#FF8C42",
+            text_color=["white", "black"],
+            text_color_disabled=["white", "black"],
+            font=(self.poppins, 14, "bold"),
+            height=40,
+            width=145,
+            corner_radius=4,
+            state="disabled",
+            command=self.uploadWavFile,
+        )
+        self.save_graph = ctk.CTkButton(
+            self.frame,
+            image=self.download_icon,
+            text="Save Graph",
+            compound="left",
+            fg_color="#FF6505",
+            hover_color="#FF8C42",
+            text_color=["white", "black"],
+            text_color_disabled=["white", "black"],
+            font=(self.poppins, 14, "bold"),
+            height=40,
+            width=145,
+            corner_radius=4,
+            state="disabled",
+            command=self.saveGraph,
+        )
+        self.plot_button.place(x=45, y=255, anchor="w")
+        self.upload_button.place(x=45, y=325, anchor="w")
+        self.save_graph.place(x=45, y=395, anchor="w")
+
         self.current_frame = 0
         self.gif_running = False
         self.wave_gif = "utils/wave.gif"
@@ -238,7 +291,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         ]
         self.hero = ctk.CTkLabel(self.hero_frame, image=self.logo_image, text="")
         self.hero.place(x=65, y=50)
-        self.plot_button.place(x=45, y=255, anchor="w")
 
         self.tabview = ctk.CTkTabview(
             self.frame,
@@ -248,22 +300,16 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             segmented_button_selected_hover_color="#FF8C42",
             anchor="ne",
         )
-
         self.tabview.add("Spectrum Analyzer")
         self.tabview.add("Oscilloscope")
-
-        # Create plot_frame inside the Spectrum Analyzer tab
         self.spectrum_frame = ctk.CTkFrame(
             self.tabview.tab("Spectrum Analyzer"), fg_color="transparent"
         )
         self.spectrum_frame.pack(fill=ctk.BOTH, expand=True)
-
-        # Create plot_frame inside the Oscilloscope tab
         self.oscilloscope_frame = ctk.CTkFrame(
             self.tabview.tab("Oscilloscope"), fg_color="transparent"
         )
         self.oscilloscope_frame.pack(fill=ctk.BOTH, expand=True)
-
         self.tabview.place_forget()
 
     def startRecordingOne(self):
@@ -293,6 +339,12 @@ class VoiceRecorderGUI(ctk.CTkFrame):
 
     def saveRecordOneAndTwo(self):
         if self.track_button == 2:
+            mb(
+                title="Recording Saved",
+                message="Record 2 save successfully.",
+                icon="check",
+                option_1="OK",
+            )
             self.recorder.saveRecordingTwo()
             self.save_button.configure(
                 text="Save",
@@ -300,12 +352,20 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             )
             self.check.configure(text="1")
             self.plot_button.configure(state="normal")
+            self.upload_button.configure(state="normal")
+            self.save_graph.configure(state="normal")
 
             self.record_btn2.configure(state="disabled")
             self.badge2.configure(fg_color="green", bg_color="green")
             self.is_paused = True
 
         else:
+            mb(
+                title="Recording Saved",
+                message="Record 1 save successfully.",
+                icon="check",
+                option_1="OK",
+            )
             self.recorder.saveRecording0ne()
             self.save_button.configure(text="Save", image=self.save_icon)
             self.check.configure(text="2")
@@ -314,83 +374,111 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             self.badge1.configure(fg_color="green", bg_color="green")
             self.is_paused = True
 
-    # def showPlot(self):
-    #     self.tabview.place(x=240, y=50)  # Make tabview visible
-    #     self.plotRecording()
-
-    # def plotRecording(self):
-    #     # Destroy previous plots
-    #     self.hero.destroy()
-    #     for widget in self.plot_frame.winfo_children():
-    #         widget.destroy()
-
-    #     # Get spectrum figure from recorder
-    #     spectrum_fig = self.recorder.plotSpectrum()
-
-    #     if spectrum_fig:
-    #         # Embed figure into the tabview's plot_frame
-    #         canvas = FigureCanvasTkAgg(spectrum_fig, master=self.plot_frame)
-    #         canvas.draw()
-    #         canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=True)
-
-    #         # Add toolbar for navigation
-    #         toolbar = NavigationToolbar2Tk(canvas, self.plot_frame)
-    #         toolbar.update()
-    #         toolbar.pack(fill=ctk.BOTH, expand=True)
-
-    #         # Ensure the plot frame is packed
-    #         self.plot_frame.pack(fill=ctk.BOTH, expand=True)
     def showPlot(self):
-        self.tabview.place(x=278, y=75)  # Make tabview visible
+        mb(
+            title="Plot Graph",
+            message="Graph plotted successful.",
+            icon="check",
+            option_1="OK",
+        )
+        self.tabview.place(x=278, y=75)
         self.plotSpectrum()
         self.plotOscilloscope()
-        self.tabview.set("Spectrum Analyzer")  # default tab after click the plot button
+        self.tabview.set("Spectrum Analyzer")
 
     def plotSpectrum(self):
-        # Destroy previous plots
         self.hero.destroy()
         for widget in self.spectrum_frame.winfo_children():
             widget.destroy()
 
-        # Get spectrum figure from recorder
         spectrum_fig = self.recorder.plotSpectrum()
 
         if spectrum_fig:
-            # Embed figure into the tabview's spectrum_frame
             canvas = FigureCanvasTkAgg(spectrum_fig, master=self.spectrum_frame)
             canvas.draw()
             canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=True)
 
-            # Add toolbar for navigation
             toolbar = NavigationToolbar2Tk(canvas, self.spectrum_frame)
             toolbar.update()
             toolbar.pack(fill=ctk.BOTH, expand=True)
-
-            # Ensure the plot frame is packed
             self.spectrum_frame.pack(fill=ctk.BOTH, expand=True)
 
     def plotOscilloscope(self):
-        # Destroy previous plots in Oscilloscope tab
         self.hero.destroy()
         for widget in self.oscilloscope_frame.winfo_children():
             widget.destroy()
 
-        # Generate the oscilloscope plot
         oscilloscope_fig = self.recorder.plotOscilloscope()
 
         if oscilloscope_fig:
-            # Embed the plot in the Oscilloscope tab
             canvas = FigureCanvasTkAgg(oscilloscope_fig, master=self.oscilloscope_frame)
             canvas.draw()
             canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=True)
 
-            # Add toolbar for navigation
             toolbar = NavigationToolbar2Tk(canvas, self.oscilloscope_frame)
             toolbar.update()
             toolbar.pack(fill=ctk.BOTH, expand=True)
 
-            # Ensure the oscilloscope frame is packed
             self.oscilloscope_frame.pack(fill=ctk.BOTH, expand=True)
+
+    def uploadWavFile(self):
+        file_paths = filedialog.askopenfilenames(
+            initialdir="../voice_recorder-main",
+            filetypes=[("WAV files", "*.wav")],
+            title="Select WAV files",
+        )
+        if len(file_paths) == 1:
+            file1 = os.path.basename(file_paths[0])
+            mb(
+                title="File Uploaded",
+                message=f"File {file1} uploaded successfully.",
+                icon="check",
+                option_1="OK",
+            )
+            self.plotWavFile(file_paths[0])
+        elif len(file_paths) == 2:
+            file1 = os.path.basename(file_paths[0])
+            file2 = os.path.basename(file_paths[1])
+            mb(
+                title="Upload WAV",
+                message=f"WAV Files {file1} and {file2} uploaded successfully.",
+                icon="check",
+                option_1="OK",
+            )
+        else:
+            mb(
+                title="Error",
+                message="Please select one or two WAV files.",
+                icon="warning",
+                option_1="OK",
+            )
+
+    def plotWavFile(self, filename):
+        self.hero.destroy()
+        for widget in self.plot_frame.winfo_children():
+            widget.destroy()
+
+        figure = self.recorder.readAndPlotWAV(filename)
+
+        if figure:
+            canvas = FigureCanvasTkAgg(figure, master=self.plot_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=True)
+
+            toolbar = NavigationToolbar2Tk(canvas, self.plot_frame)
+            toolbar.update()
+            toolbar.pack(fill=ctk.BOTH, expand=True)
+            self.plot_frame.pack(fill=ctk.BOTH, expand=True)
+
+    def saveGraph(self):
+        mb(
+            title="Save Graph",
+            message="Graphs saved successfully.",
+            icon="check",
+            option_1="OK",
+        )
+        self.recorder.saveOscilloscopeGraph()
+        self.recorder.saveSpectrumGraph()
 
     def lightDarkMode(self):
         if self.is_darked:

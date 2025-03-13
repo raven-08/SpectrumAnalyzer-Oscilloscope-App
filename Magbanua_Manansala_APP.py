@@ -6,6 +6,7 @@ import time
 import threading
 import scipy.io.wavfile as wavfile
 import scipy.fftpack as fftpk
+import os
 
 class VoiceRecorder:
     def __init__(
@@ -194,6 +195,53 @@ class VoiceRecorder:
         subplot.grid(True, linestyle="--", alpha=0.6)
         subplot.legend(fontsize=8)
         return oscilloscope
+
+    def saveSpectrumGraph(self, filename="spectrum.jpg"):
+        spectrum_figure = self.plotSpectrum()
+        spectrum_figure.savefig(filename, format='jpeg')
+        print(f"Spectrum graph saved as {filename}")
+
+    def saveOscilloscopeGraph(self, filename="oscilloscope.jpg"):
+        oscilloscope_figure = self.plotOscilloscope()
+        oscilloscope_figure.savefig(filename, format='jpeg')
+        print(f"Oscilloscope graph saved as {filename}")
+
+    def readAndPlotWAV(self, filename):
+        name = os.path.basename(filename)
+        file = wave.open(filename, "rb")
+        sample_freq = file.getframerate()
+        frames = file.getnframes()
+        signal_wave = file.readframes(-1)
+        file.close()
+        time = frames / sample_freq
+        audio_array = np.frombuffer(signal_wave, dtype=np.int16)
+        times = np.linspace(0, time, num=frames)
+        figure = Figure(figsize=(7, 5), dpi=100)
+        subplot = figure.add_subplot(111)
+        subplot.plot(
+            times,
+            audio_array,
+            "skyblue",
+            label=name,
+            alpha=1,
+        )
+        subplot.set_ylabel(
+            "Signal Wave",
+            fontsize=10,
+            fontweight="bold",
+        )
+        subplot.set_xlabel(
+            "Time (s)",
+            fontsize=10,
+            fontweight="bold",
+        )
+        subplot.set_xlim(0, time)
+        subplot.set_title("Analyze Frequency",  fontsize=12,
+            fontweight="bold",
+            color="darkred",)
+        subplot.grid(True, linestyle="--", alpha=0.6)
+        subplot.legend(fontsize=8)
+        return figure
 
     def __del__(self):
         self.pa.terminate()
