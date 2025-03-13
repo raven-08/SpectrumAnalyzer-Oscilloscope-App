@@ -43,11 +43,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             fg_color="transparent",
         )
         self.hero_frame.place(x=360, y=70)
-        self.plot_frame = ctk.CTkFrame(
-            self.hero_frame,
-            fg_color="transparent",
-        )
-        self.plot_frame.place(x=278, y=75)
         self.theme_frame = ctk.CTkFrame(
             self.frame,
             corner_radius=8,
@@ -258,7 +253,7 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             height=40,
             width=145,
             corner_radius=4,
-            state="disabled",
+            state="normal",
             command=self.uploadWavFile,
         )
         self.save_graph = ctk.CTkButton(
@@ -311,6 +306,26 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         )
         self.oscilloscope_frame.pack(fill=ctk.BOTH, expand=True)
         self.tabview.place_forget()
+
+        self.upload_tab_view = ctk.CTkTabview(
+            self.frame,
+            width=800,
+            height=600,
+            segmented_button_selected_color="#FF6505",
+            segmented_button_selected_hover_color="#FF8C42",
+            anchor="ne",
+        )
+        self.upload_tab_view.add("Spectrum Analyzer")
+        self.upload_tab_view.add("Oscilloscope")
+        self.upload_spectrum_frame = ctk.CTkFrame(
+            self.upload_tab_view.tab("Spectrum Analyzer"), fg_color="transparent"
+        )
+        self.upload_spectrum_frame.pack(fill=ctk.BOTH, expand=True)
+        self.upload_oscilloscope_frame = ctk.CTkFrame(
+            self.upload_tab_view.tab("Oscilloscope"), fg_color="transparent"
+        )
+        self.upload_oscilloscope_frame.pack(fill=ctk.BOTH, expand=True)
+        self.upload_tab_view.place_forget()
 
     def startRecordingOne(self):
         self.recorder.recordSignal()
@@ -376,7 +391,7 @@ class VoiceRecorderGUI(ctk.CTkFrame):
 
     def showPlot(self):
         self.hero_frame.forget()
-        self.plot_frame.forget()
+        # self.plot_frame.forget()
         mb(
             title="Plot Graph",
             message="Graph plotted successful.",
@@ -387,6 +402,14 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         self.plotSpectrum()
         self.plotOscilloscope()
         self.tabview.set("Spectrum Analyzer")
+
+    def showPlotWAVFiles(self, filename1, filename2):
+        self.hero_frame.forget()
+        self.upload_tab_view.place(x=278, y=75)
+        self.recorder.readAndPlotWAV(filename1, filename2)
+        self.uploadPlotSpectrum()
+        self.uploadPlotOscilloscope()
+        self.upload_tab_view.set("Spectrum Analyzer")
 
     def plotSpectrum(self):
         self.hero.destroy()
@@ -423,55 +446,84 @@ class VoiceRecorderGUI(ctk.CTkFrame):
 
             self.oscilloscope_frame.pack(fill=ctk.BOTH, expand=True)
 
+    def uploadPlotSpectrum(self):
+        self.hero.destroy()
+        self.tabview.place_forget()
+        for widget in self.upload_spectrum_frame.winfo_children():
+            widget.destroy()
+
+        spectrum_fig = self.recorder.plotSpectrum()
+
+        if spectrum_fig:
+            canvas = FigureCanvasTkAgg(spectrum_fig, master=self.upload_spectrum_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=True)
+
+            toolbar = NavigationToolbar2Tk(canvas, self.upload_spectrum_frame)
+            toolbar.update()
+            toolbar.pack(fill=ctk.BOTH, expand=True)
+            self.upload_spectrum_frame.pack(fill=ctk.BOTH, expand=True)
+
+    def uploadPlotOscilloscope(self):
+        self.hero.destroy()
+        self.tabview.place_forget()
+        for widget in self.upload_oscilloscope_frame.winfo_children():
+            widget.destroy()
+
+        oscilloscope_fig = self.recorder.plotOscilloscope()
+
+        if oscilloscope_fig:
+            canvas = FigureCanvasTkAgg(
+                oscilloscope_fig, master=self.upload_oscilloscope_frame
+            )
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=True)
+
+            toolbar = NavigationToolbar2Tk(canvas, self.upload_oscilloscope_frame)
+            toolbar.update()
+            toolbar.pack(fill=ctk.BOTH, expand=True)
+
+            self.upload_oscilloscope_frame.pack(fill=ctk.BOTH, expand=True)
+
     def uploadWavFile(self):
         file_paths = filedialog.askopenfilenames(
             initialdir="../voice_recorder-main",
             filetypes=[("WAV files", "*.wav")],
             title="Select WAV files",
         )
+        # if len(file_paths) == 1:
+        #     file1 = os.path.basename(file_paths[0])
+        #     mb(
+        #         title="File Uploaded",
+        #         message=f"File {file1} uploaded successfully.",
+        #         icon="check",
+        #         option_1="OK",
+        #     )
+        #     # self.plotWavFile(file_paths[0])
         if len(file_paths) == 1:
-            file1 = os.path.basename(file_paths[0])
             mb(
-                title="File Uploaded",
-                message=f"File {file1} uploaded successfully.",
-                icon="check",
+                title="Error",
+                message="Please select two(2) WAV files.",
+                icon="warning",
                 option_1="OK",
             )
-            self.plotWavFile(file_paths[0])
         elif len(file_paths) == 2:
             file1 = os.path.basename(file_paths[0])
             file2 = os.path.basename(file_paths[1])
             mb(
                 title="Upload WAV",
-                message=f"WAV Files {file1} and {file2} uploaded successfully.",
+                message=f"WAV Files {file1} and {file2} uploa*ded successfully.",
                 icon="check",
                 option_1="OK",
             )
+            self.showPlotWAVFiles(filename1=file_paths[0], filename2=file_paths[1])
         else:
             mb(
                 title="Error",
-                message="Please select one or two WAV files.",
-                icon="warning",
+                message="Please select two(2) WAV files",
+                icon="cancel",
                 option_1="OK",
             )
-
-    def plotWavFile(self, filename):
-        self.hero.destroy()
-        self.tabview.place_forget()
-        for widget in self.plot_frame.winfo_children():
-            widget.destroy()
-
-        figure = self.recorder.readAndPlotWAV(filename)
-
-        if figure:
-            canvas = FigureCanvasTkAgg(figure, master=self.plot_frame)
-            canvas.draw()
-            canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=True)
-
-            toolbar = NavigationToolbar2Tk(canvas, self.plot_frame)
-            toolbar.update()
-            toolbar.pack(fill=ctk.BOTH, expand=True)
-            self.plot_frame.pack(fill=ctk.BOTH, expand=True)
 
     def saveGraph(self):
         mb(
