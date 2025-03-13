@@ -375,6 +375,8 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             self.is_paused = True
 
     def showPlot(self):
+        self.hero_frame.forget()
+        self.plot_frame.forget()
         mb(
             title="Plot Graph",
             message="Graph plotted successful.",
@@ -455,6 +457,7 @@ class VoiceRecorderGUI(ctk.CTkFrame):
 
     def plotWavFile(self, filename):
         self.hero.destroy()
+        self.tabview.place_forget()
         for widget in self.plot_frame.winfo_children():
             widget.destroy()
 

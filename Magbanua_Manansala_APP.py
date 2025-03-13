@@ -8,6 +8,7 @@ import scipy.io.wavfile as wavfile
 import scipy.fftpack as fftpk
 import os
 
+
 class VoiceRecorder:
     def __init__(
         self,
@@ -173,7 +174,7 @@ class VoiceRecorder:
             time,
             composite_signal,
             "skyblue",
-            label="Composite Signal",
+            label="Sum",
             alpha=1,
         )
         subplot.set_xlabel(
@@ -198,12 +199,12 @@ class VoiceRecorder:
 
     def saveSpectrumGraph(self, filename="spectrum.jpg"):
         spectrum_figure = self.plotSpectrum()
-        spectrum_figure.savefig(filename, format='jpeg')
+        spectrum_figure.savefig(filename, format="jpeg")
         print(f"Spectrum graph saved as {filename}")
 
     def saveOscilloscopeGraph(self, filename="oscilloscope.jpg"):
         oscilloscope_figure = self.plotOscilloscope()
-        oscilloscope_figure.savefig(filename, format='jpeg')
+        oscilloscope_figure.savefig(filename, format="jpeg")
         print(f"Oscilloscope graph saved as {filename}")
 
     def readAndPlotWAV(self, filename):
@@ -236,9 +237,12 @@ class VoiceRecorder:
             fontweight="bold",
         )
         subplot.set_xlim(0, time)
-        subplot.set_title("Analyze Frequency",  fontsize=12,
+        subplot.set_title(
+            "Analyze Frequency",
+            fontsize=12,
             fontweight="bold",
-            color="darkred",)
+            color="darkred",
+        )
         subplot.grid(True, linestyle="--", alpha=0.6)
         subplot.legend(fontsize=8)
         return figure
