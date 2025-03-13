@@ -1,5 +1,7 @@
 import customtkinter as ctk
 import os
+from threading import Thread
+import time
 from themes.theme import Theme
 from CTkMessagebox import CTkMessagebox as mb
 from PIL import Image, ImageSequence
@@ -23,7 +25,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         self.recorder = VoiceRecorder()
         self.is_theme_open = False
         self.is_darked = False
-        self.is_paused = False
         self.track_button = 1
 
         self.parent.columnconfigure(0, weight=1)
@@ -117,8 +118,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             self.frame,
             image=self.dark_icon,
             text="",
-            fg_color="#FF6505",
-            hover_color="#FF8C42",
             text_color="white",
             font=(self.poppins, 14, "bold"),
             height=40,
@@ -131,13 +130,11 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             image=self.theme_icon,
             text="",
             text_color="white",
-            fg_color="#FF6505",
-            hover_color="#FF8C42",
             font=(self.poppins, 14, "bold"),
             height=40,
             width=40,
             corner_radius=4,
-            # command=self.toggleThemeFrame,
+            command=self.toggleThemeFrame,
         )
         self.dark_button.place(relx=0.91, rely=0.03, anchor="ne")
         self.theme_button.place(relx=0.97, rely=0.03, anchor="ne")
@@ -147,8 +144,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             image=self.mic_icon,
             text="",
             compound="left",
-            fg_color="#FF6505",
-            hover_color="#FF8C42",
             text_color=["white", "black"],
             font=(self.poppins, 24, "bold"),
             height=40,
@@ -161,14 +156,12 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             image=self.mic_icon,
             text="",
             compound="left",
-            fg_color="#FF6505",
-            hover_color="#FF8C42",
             text_color=["white", "black"],
             font=(self.poppins, 24, "bold"),
             height=40,
             width=60,
             corner_radius=4,
-            state="normal",
+            state="disabled",
             command=self.startRecordingTwo,
         )
         self.badge1 = ctk.CTkLabel(
@@ -195,42 +188,12 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         self.record_btn2.place(x=160, y=115, anchor="w")
         self.badge1.place(x=114, y=124, anchor="w")
         self.badge2.place(x=229, y=124, anchor="w")
-        self.save_button = ctk.CTkButton(
-            self.frame,
-            image=self.save_icon,
-            text="Save",
-            compound="left",
-            fg_color="#FF6505",
-            hover_color="#FF8C42",
-            text_color=["white", "black"],
-            text_color_disabled=["white", "black"],
-            font=(self.poppins, 14, "bold"),
-            height=40,
-            width=145,
-            corner_radius=4,
-            state="disabled",
-            command=self.saveRecordOneAndTwo,
-        )
-        self.check = ctk.CTkLabel(
-            self.frame,
-            text="1",
-            text_color="white",
-            font=(self.poppins, 12, "bold"),
-            fg_color="#FF6505",
-            bg_color="#FF6505",
-            height=20,
-            width=20,
-        )
-        self.save_button.place(x=45, y=185, anchor="w")
-        self.check.place(x=164, y=190, anchor="w")
 
         self.plot_button = ctk.CTkButton(
             self.frame,
             image=self.plot_icon,
             text="Plot",
             compound="left",
-            fg_color="#FF6505",
-            hover_color="#FF8C42",
             text_color=["white", "black"],
             text_color_disabled=["white", "black"],
             font=(self.poppins, 14, "bold"),
@@ -245,15 +208,13 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             image=self.upload_icon,
             text="Upload",
             compound="left",
-            fg_color="#FF6505",
-            hover_color="#FF8C42",
             text_color=["white", "black"],
             text_color_disabled=["white", "black"],
             font=(self.poppins, 14, "bold"),
             height=40,
             width=145,
             corner_radius=4,
-            state="normal",
+            state="disabled",
             command=self.uploadWavFile,
         )
         self.save_graph = ctk.CTkButton(
@@ -261,8 +222,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             image=self.download_icon,
             text="Save Graph",
             compound="left",
-            fg_color="#FF6505",
-            hover_color="#FF8C42",
             text_color=["white", "black"],
             text_color_disabled=["white", "black"],
             font=(self.poppins, 14, "bold"),
@@ -272,9 +231,9 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             state="disabled",
             command=self.saveGraph,
         )
-        self.plot_button.place(x=45, y=255, anchor="w")
-        self.upload_button.place(x=45, y=325, anchor="w")
-        self.save_graph.place(x=45, y=395, anchor="w")
+        self.plot_button.place(x=45, y=185, anchor="w")
+        self.upload_button.place(x=45, y=255, anchor="w")
+        self.save_graph.place(x=45, y=325, anchor="w")
 
         self.current_frame = 0
         self.gif_running = False
@@ -291,8 +250,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             self.frame,
             width=800,
             height=600,
-            segmented_button_selected_color="#FF6505",
-            segmented_button_selected_hover_color="#FF8C42",
             anchor="ne",
         )
         self.tabview.add("Spectrum Analyzer")
@@ -311,8 +268,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             self.frame,
             width=800,
             height=600,
-            segmented_button_selected_color="#FF6505",
-            segmented_button_selected_hover_color="#FF8C42",
             anchor="ne",
         )
         self.upload_tab_view.add("Spectrum Analyzer")
@@ -326,75 +281,280 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         )
         self.upload_oscilloscope_frame.pack(fill=ctk.BOTH, expand=True)
         self.upload_tab_view.place_forget()
+        
+        self.theme_frame = ctk.CTkFrame(
+            self.frame,
+            corner_radius=8,
+            width=250,
+            height=450,
+        )
+        self.autumn = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color=["#BF6F5F", "#9B4A3C"],
+            hover_color=["#C8766D", "#A03E29"],
+            border_color=["#BF8F7C", "#6D4F4D"],
+            command=self.setAutumnTheme,
+        )
+        self.autumn.place(relx=0.2, rely=0.1, anchor="n")
+        self.breeze = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color=["#4DB3C8", "#2D6D7D"],
+            hover_color=["#4A9AB3", "#2B5B6D"],
+            border_color=["#4D7A8D", "#9B9F9F"],
+            command=self.setBreezeTheme,
+        )
+        self.breeze.place(relx=0.4, rely=0.1, anchor="n")
+        self.carrot = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color=["#F76D57", "#D23016"],
+            hover_color=["#E8624A", "#A31600"],
+            border_color=["#3E454A", "#949A9F"],
+            command=self.setCarrotTheme,
+        )
+        self.carrot.place(relx=0.6, rely=0.1, anchor="n")
+        self.cherry = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color=["#F5B3B3", "#C85C5C"],
+            hover_color=["#F29C9C", "#BF3E3E"],
+            border_color=["#F4A3A0", "#A8A8A8"],
+            command=self.setCherryTheme,
+        )
+        self.cherry.place(relx=0.8, rely=0.1, anchor="n")
+        self.coffee = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color=["#825C46", "#5A3E32"],
+            hover_color=["#6F4C37", "#4B3126"],
+            border_color=["#3E454A", "#949A9F"],
+            command=self.setCoffeeTheme,
+        )
+        self.coffee.place(relx=0.8, rely=0.1, anchor="n")
+        self.lavender = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color=["#B19CD9", "#9370DB"],
+            hover_color=["#9370DB", "#7A5DC7"],
+            border_color=["#3E454A", "#949A9F"],
+            command=self.setLavenderTheme,
+        )
+        self.lavender.place(relx=0.2, rely=0.22, anchor="n")
+        self.marsh = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color=["#7DBE98", "#4E8F69"],
+            hover_color=["#6EAA8C", "#397F5A"],
+            border_color=["#3E454A", "#949A9F"],
+            command=self.setMarshTheme,
+        )
+        self.marsh.place(relx=0.4, rely=0.22, anchor="n")
+        self.metal = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color=["#A0A0A0", "#505050"],
+            hover_color=["#909090", "#606060"],
+            border_color=["#3E454A", "#949A9F"],
+            command=self.setMetalTheme,
+        )
+        self.metal.place(relx=0.6, rely=0.22, anchor="n")
+        self.midnight = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#003F6C", "#002E5D"],
+            hover_color= ["#004080", "#00214B"],
+            border_color= ["#003D4E", "#7F8C8D"],
+            command=self.setMidnightTheme,
+        )
+        self.midnight.place(relx=0.8, rely=0.22, anchor="n")
+        self.patina = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#B57A4C", "#6F4C3B"],
+            hover_color= ["#A9643A", "#5C3A24"],
+            border_color= ["#9B5D3A", "#3E2D1F"],
+            command=self.setPatinaTheme,
+        )
+        self.patina.place(relx=0.2, rely=0.34, anchor="n")
+        self.orange = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#FF8C42", "#FF6505"],
+            hover_color= ["#E67320", "#CC5500"],
+            border_color= ["#3E454A", "#949A9F"],
+            command=self.setOrangeTheme,
+        )
+        self.orange.place(relx=0.4, rely=0.34, anchor="n")
+        self.pink = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#FF6B6B", "#B74177"],
+            hover_color= ["#FF4E4E", "#A01E5C"],
+            border_color= ["#3E454A", "#949A9F"],
+            command=self.setPinkTheme,
+        )
+        self.pink.place(relx=0.6, rely=0.34, anchor="n")
+        self.red = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#D03434", "#A11D1D"],
+            hover_color= ["#B22E2E", "#791414"],
+            border_color= ["#3E454A", "#949A9F"],
+            command=self.setRedTheme,
+        )
+        self.red.place(relx=0.8, rely=0.34, anchor="n")
+        self.rime = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#6E8BA4", "#4A5D6B"],
+            hover_color= ["#5F7A8E", "#3A4A54"],
+            border_color= ["#6C7B82", "#9D9F9F"],
+            command=self.setRimeTheme,
+        )
+        self.rime.place(relx=0.2, rely=0.46, anchor="n")
+        self.rose = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#a85475", "#6c1f2b"],
+            hover_color= ["#98415f", "#5c0f0b"],
+            border_color= ["#8b3c49", "#b7707d"],
+            command=self.setRoseTheme,
+        )
+        self.rose.place(relx=0.4, rely=0.46, anchor="n")
+        self.sky = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#27577D", "#BBD1E4"],
+            hover_color= ["#000099", "#9999ff"],
+            border_color= ["#3E454A", "#949A9F"],
+            command=self.setSkyTheme,
+        )
+        self.sky.place(relx=0.6, rely=0.46, anchor="n")
+        self.violet = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#7C63A6", "#402E5C"],
+            hover_color= ["#6C5090", "#301E3C"],
+            border_color= ["#5F4B7A", "#8B7FAE"],
+            command=self.setVioletTheme,
+        )
+        self.violet.place(relx=0.8, rely=0.46, anchor="n")
+        self.yellow = ctk.CTkButton(
+            self.theme_frame,
+            text="",
+            corner_radius=20,
+            height=40,
+            width=40,
+            fg_color= ["#FFA500", "#FF8C00"],
+            hover_color= ["#FF8C00", "#FF6600"],
+            border_color= ["#3E454A", "#949A9F"],
+            command=self.setYellowTheme,
+        )
+        self.yellow.place(relx=0.2, rely=0.58, anchor="n")
+        self.theme = Theme(
+            self.theme_button, self.dark_button, self.frame, self.theme_frame, self.record_btn1, self.record_btn2, self.plot_button, self.upload_button, self.save_graph, self.tabview, self.upload_tab_view 
+        )
+        
 
     def startRecordingOne(self):
+        self.resetView()
         self.recorder.recordSignal()
         mb(title="Start", message="Recording 1 has started.")
-        if not self.gif_running:
-            self.gif_running = True
-            self.animateWave()
-        self.is_paused = False
+        self.gif_running = True
         self.animateWave()
-        self.save_button.configure(state="normal", text="Save")
-        # self.plot_button.configure(state="disabled")
-        self.record_btn2.configure(state="disabled")
-        self.track_button = 1
+        Thread(target=self.changeBadgeColor, args=(self.badge1,)).start()
+        Thread(target=self.trackRecordingOne).start()
 
     def startRecordingTwo(self):
+        self.recorder.saveRecording0ne()
         self.recorder.recordSignal()
         mb(title="Start", message="Recording 2 has started.")
-        if not self.gif_running:
-            self.gif_running = True
-            self.animateWave()
-        self.is_paused = False
+        self.gif_running = True
         self.animateWave()
-        self.save_button.configure(state="normal", text="Save")
-        # self.plot_button.configure(state="disabled")
-        self.track_button = 2
+        Thread(target=self.changeBadgeColor, args=(self.badge2,)).start()
+        Thread(target=self.trackRecordingTwo).start()
 
-    def saveRecordOneAndTwo(self):
-        if self.track_button == 2:
-            mb(
-                title="Recording Saved",
-                message="Record 2 save successfully.",
-                icon="check",
-                option_1="OK",
-            )
-            self.recorder.saveRecordingTwo()
-            self.save_button.configure(
-                text="Save",
-                image=self.save_icon,
-            )
-            self.check.configure(text="1")
-            self.plot_button.configure(state="normal")
-            self.upload_button.configure(state="normal")
-            self.save_graph.configure(state="normal")
+    def changeBadgeColor(self, badge):
+        time.sleep(5)
+        badge.configure(fg_color="green", bg_color="green")
 
-            self.record_btn2.configure(state="disabled")
-            self.badge2.configure(fg_color="green", bg_color="green")
-            self.is_paused = True
+    def trackRecordingOne(self):
+        time.sleep(5)
+        self.record_btn2.configure(state="normal")
+        self.plot_button.configure(state="disabled")
+        self.record_btn1.configure(state="disabled")
 
-        else:
-            mb(
-                title="Recording Saved",
-                message="Record 1 save successfully.",
-                icon="check",
-                option_1="OK",
-            )
-            self.recorder.saveRecording0ne()
-            self.save_button.configure(text="Save", image=self.save_icon)
-            self.check.configure(text="2")
-            self.record_btn2.configure(state="normal")
-            self.record_btn1.configure(state="disabled")
-            self.badge1.configure(fg_color="green", bg_color="green")
-            self.is_paused = True
+    def trackRecordingTwo(self):
+        time.sleep(5)
+        self.record_btn1.configure(state="normal")
+        self.plot_button.configure(state="normal")
+        self.record_btn2.configure(state="disabled")
 
     def showPlot(self):
+        self.gif_running = False
         self.hero_frame.forget()
-        # self.plot_frame.forget()
+        self.recorder.saveRecordingTwo()
+        self.upload_button.configure(state="normal")
+        self.save_graph.configure(state="normal")
+        self.badge1.configure(fg_color="red", bg_color="red")
+        self.badge2.configure(fg_color="red", bg_color="red")
+
         mb(
             title="Plot Graph",
-            message="Graph plotted successful.",
+            message="Graph plotted successfully.",
             icon="check",
             option_1="OK",
         )
@@ -412,7 +572,7 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         self.upload_tab_view.set("Spectrum Analyzer")
 
     def plotSpectrum(self):
-        self.hero.destroy()
+        # self.hero.destroy()
         for widget in self.spectrum_frame.winfo_children():
             widget.destroy()
 
@@ -429,7 +589,7 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             self.spectrum_frame.pack(fill=ctk.BOTH, expand=True)
 
     def plotOscilloscope(self):
-        self.hero.destroy()
+        # self.hero.destroy()
         for widget in self.oscilloscope_frame.winfo_children():
             widget.destroy()
 
@@ -447,7 +607,7 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             self.oscilloscope_frame.pack(fill=ctk.BOTH, expand=True)
 
     def uploadPlotSpectrum(self):
-        self.hero.destroy()
+        # self.hero.destroy()
         self.tabview.place_forget()
         for widget in self.upload_spectrum_frame.winfo_children():
             widget.destroy()
@@ -465,7 +625,7 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             self.upload_spectrum_frame.pack(fill=ctk.BOTH, expand=True)
 
     def uploadPlotOscilloscope(self):
-        self.hero.destroy()
+        # self.hero.destroy()
         self.tabview.place_forget()
         for widget in self.upload_oscilloscope_frame.winfo_children():
             widget.destroy()
@@ -491,15 +651,6 @@ class VoiceRecorderGUI(ctk.CTkFrame):
             filetypes=[("WAV files", "*.wav")],
             title="Select WAV files",
         )
-        # if len(file_paths) == 1:
-        #     file1 = os.path.basename(file_paths[0])
-        #     mb(
-        #         title="File Uploaded",
-        #         message=f"File {file1} uploaded successfully.",
-        #         icon="check",
-        #         option_1="OK",
-        #     )
-        #     # self.plotWavFile(file_paths[0])
         if len(file_paths) == 1:
             mb(
                 title="Error",
@@ -546,10 +697,82 @@ class VoiceRecorderGUI(ctk.CTkFrame):
         self.is_darked = not self.is_darked
 
     def animateWave(self):
-        if not self.is_paused and self.gif_running:
+        if self.gif_running:
             self.hero.configure(image=self.frames[self.current_frame])
             self.current_frame = (self.current_frame + 1) % len(self.frames)
             self.after(100, self.animateWave)
+
+    def resetView(self):
+        if self.tabview.winfo_exists():
+            self.tabview.place_forget()
+        if self.upload_tab_view.winfo_exists():
+            self.upload_tab_view.place_forget()
+        self.gif_running = True
+
+    def toggleThemeFrame(self):
+        if self.is_theme_open:
+            self.theme_frame.place_forget()
+        else:
+            self.theme_frame.place(relx=0.98, rely=0.16, anchor="ne")  # Show the frame
+
+        self.is_theme_open = not self.is_theme_open
+
+    def setAutumnTheme(self):
+        self.theme.autumn()
+
+    def setBreezeTheme(self):
+        self.theme.breeze()
+
+    def setDefaultTheme(self):
+        self.theme.default()
+
+    def setCarrotTheme(self):
+        self.theme.carrot()
+
+    def setCherryTheme(self):
+        self.theme.cherry()
+
+    def setCoffeeTheme(self):
+        self.theme.coffee()
+
+    def setLavenderTheme(self):
+        self.theme.lavender()
+
+    def setMarshTheme(self):
+        self.theme.marsh()
+
+    def setMetalTheme(self):
+        self.theme.metal()
+
+    def setMidnightTheme(self):
+        self.theme.midnight()
+
+    def setPatinaTheme(self):
+        self.theme.patina()
+
+    def setOrangeTheme(self):
+        self.theme.orange()
+
+    def setPinkTheme(self):
+        self.theme.pink()
+
+    def setRedTheme(self):
+        self.theme.red()
+
+    def setRimeTheme(self):
+        self.theme.rime()
+
+    def setRoseTheme(self):
+        self.theme.rose()
+
+    def setSkyTheme(self):
+        self.theme.sky()
+
+    def setVioletTheme(self):
+        self.theme.violet()
+
+    def setYellowTheme(self):
+        self.theme.yellow()
 
 
 root = ctk.CTk()
