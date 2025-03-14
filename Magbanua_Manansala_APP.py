@@ -2,13 +2,11 @@ import pyaudio
 import wave
 import numpy as np
 from matplotlib.figure import Figure
-import time
 import threading
 import scipy.io.wavfile as wavfile
 import scipy.fftpack as fftpk
-import os
 
-class VoiceRecorder:
+class SpectrumAnalyzer:
     def __init__(
         self,
         frames_per_buffer=44100,
@@ -197,22 +195,6 @@ class VoiceRecorder:
         oscilloscope_figure.savefig(filename, format="jpeg")
         print(f"Oscilloscope graph saved as {filename}")
 
-    def readAndPlotWAV(self, filename1, filename2, sample_rate=None):
-        self.s_rate1, self.signal1 = wavfile.read(filename1)
-        self.s_rate2, self.signal2 = wavfile.read(filename2)
-        self.min_length = min(len(self.signal1), len(self.signal2))
-        self.signal1 = self.signal1[: self.min_length]
-        self.signal2 = self.signal2[: self.min_length]
-
-        self.composite_signal = self.signal1 + self.signal2
-
-        self.FFT1 = abs(fftpk.fft(self.signal1))
-        self.FFT2 = abs(fftpk.fft(self.signal2))
-        self.FFT_composite = abs(fftpk.fft(self.composite_signal))
-
-        if sample_rate is None:
-            sample_rate = self.s_rate1
-        self.freqs = fftpk.fftfreq(len(self.FFT1), (1.0 / sample_rate))
 
     def __del__(self):
         self.pa.terminate()
